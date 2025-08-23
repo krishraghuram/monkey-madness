@@ -1,0 +1,25 @@
+{
+  "name": "monkey-madness",
+  "version": "0.0.1",
+  "description": "Mixed Bag of Grease/Tamper/Violent Monkey Scripts for the Web",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint scripts/**/*.js",
+    "validate": "node tools/validate-headers.js",
+    "check": "npm run lint && npm run validate"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/krishraghuram/monkey-madness.git"
+  },
+  "author": "Raghuram Krishnaswami",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/krishraghuram/monkey-madness/issues"
+  },
+  "homepage": "https://github.com/krishraghuram/monkey-madness#readme"
+}
