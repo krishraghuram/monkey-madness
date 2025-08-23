@@ -17,12 +17,12 @@
         const dayElements = document.querySelectorAll('.day.ng-scope');
 
         // Loop through each day element
-        dayElements.forEach(element => {
+        dayElements.forEach((element) => {
             // Find span elements with class 'hidden-xs ng-binding' inside the current day element
             const spanElements = element.querySelectorAll('span.hidden-xs.ng-binding');
 
             // Check each span element
-            spanElements.forEach(span => {
+            spanElements.forEach((span) => {
                 // Get the text content (the number)
                 const number = parseInt(span.textContent.trim(), 10);
 
@@ -39,13 +39,14 @@
     highlightWednesdays();
 
     // Set up a MutationObserver to handle dynamic content changes
-    const observer = new MutationObserver(function (mutations) { // eslint-disable-line no-unused-vars
+    // eslint-disable-next-line no-unused-vars
+    const observer = new MutationObserver(function (mutations) {
         highlightWednesdays();
     });
 
     // Start observing the document body for changes
     observer.observe(document.body, {
         childList: true,
-        subtree: true
+        subtree: true,
     });
 })();

@@ -88,7 +88,10 @@
         }
 
         // Find a good place to insert the filter (usually after the page header)
-        const insertPoint = document.querySelector('#ordersContainer, .a-section.a-spacing-none.a-spacing-top-medium, .your-orders-content-container') || document.body;
+        const insertPoint =
+            document.querySelector(
+                '#ordersContainer, .a-section.a-spacing-none.a-spacing-top-medium, .your-orders-content-container'
+            ) || document.body;
 
         const filterHTML = `
             <div id="order-filter-container" class="order-filter-container">
@@ -109,7 +112,7 @@
         insertPoint.insertAdjacentHTML('afterbegin', filterHTML);
 
         // Add click event listeners to tabs
-        document.querySelectorAll('.order-filter-tab').forEach(tab => {
+        document.querySelectorAll('.order-filter-tab').forEach((tab) => {
             tab.addEventListener('click', function () {
                 const filter = this.getAttribute('data-filter');
                 setFilter(filter);
@@ -127,13 +130,13 @@
             '.js-order-card',
             '.a-box-group.a-spacing-base.order',
             '[data-order-id]',
-            '.order-info'
+            '.order-info',
         ];
 
         let foundOrders = [];
-        orderSelectors.forEach(selector => {
+        orderSelectors.forEach((selector) => {
             const orders = document.querySelectorAll(selector);
-            orders.forEach(order => {
+            orders.forEach((order) => {
                 if (!foundOrders.includes(order)) {
                     foundOrders.push(order);
                 }
@@ -143,23 +146,27 @@
         // If no orders found with specific selectors, try a broader approach
         if (foundOrders.length === 0) {
             const possibleOrders = document.querySelectorAll('.a-section');
-            possibleOrders.forEach(section => {
-                const orderInfo = section.querySelector('.delivery-box__primary-text, .a-size-medium, [data-order-id]');
+            possibleOrders.forEach((section) => {
+                const orderInfo = section.querySelector(
+                    '.delivery-box__primary-text, .a-size-medium, [data-order-id]'
+                );
                 if (orderInfo) {
                     foundOrders.push(section);
                 }
             });
         }
 
-        foundOrders.forEach(order => {
+        foundOrders.forEach((order) => {
             const isWholeFood = checkIfWholeFoods(order);
             orderCards.push({
                 element: order,
-                type: isWholeFood ? 'wholefoods' : 'amazon'
+                type: isWholeFood ? 'wholefoods' : 'amazon',
             });
         });
 
-        console.log(`Found ${orderCards.length} orders: ${orderCards.filter(o => o.type === 'amazon').length} Amazon, ${orderCards.filter(o => o.type === 'wholefoods').length} Whole Foods`);
+        console.log(
+            `Found ${orderCards.length} orders: ${orderCards.filter((o) => o.type === 'amazon').length} Amazon, ${orderCards.filter((o) => o.type === 'wholefoods').length} Whole Foods`
+        );
     }
 
     // Function to check if an order is from Whole Foods
@@ -171,10 +178,10 @@
             'Purchased at Whole Foods Market',
             'Whole Foods Market',
             'WFM',
-            'whole foods'
+            'whole foods',
         ];
 
-        return wholeFoodsIndicators.some(indicator =>
+        return wholeFoodsIndicators.some((indicator) =>
             textContent.toLowerCase().includes(indicator.toLowerCase())
         );
     }
@@ -184,8 +191,9 @@
         let amazonCount = 0;
         let wholeFoodsCount = 0;
 
-        orderCards.forEach(order => {
-            const shouldShow = currentFilter === 'all' ||
+        orderCards.forEach((order) => {
+            const shouldShow =
+                currentFilter === 'all' ||
                 (currentFilter === 'amazon' && order.type === 'amazon') ||
                 (currentFilter === 'wholefoods' && order.type === 'wholefoods');
 
@@ -221,7 +229,7 @@
         currentFilter = filter;
 
         // Update active tab
-        document.querySelectorAll('.order-filter-tab').forEach(tab => {
+        document.querySelectorAll('.order-filter-tab').forEach((tab) => {
             tab.classList.remove('active');
         });
         document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
@@ -261,15 +269,15 @@
     const observer = new MutationObserver(function (mutations) {
         let shouldUpdate = false;
 
-        mutations.forEach(mutation => {
+        mutations.forEach((mutation) => {
             // Check if new order-related content was added
-            mutation.addedNodes.forEach(node => {
+            mutation.addedNodes.forEach((node) => {
                 if (node.nodeType === Node.ELEMENT_NODE) {
-                    const hasOrderContent = node.querySelector && (
-                        node.querySelector('.order-card, .js-order-card, [data-order-id]') ||
-                        node.classList.contains('order-card') ||
-                        node.classList.contains('js-order-card')
-                    );
+                    const hasOrderContent =
+                        node.querySelector &&
+                        (node.querySelector('.order-card, .js-order-card, [data-order-id]') ||
+                            node.classList.contains('order-card') ||
+                            node.classList.contains('js-order-card'));
                     if (hasOrderContent) {
                         shouldUpdate = true;
                     }
@@ -285,7 +293,7 @@
     // Start observing
     observer.observe(document.body, {
         childList: true,
-        subtree: true
+        subtree: true,
     });
 
     // Initialize when DOM is ready

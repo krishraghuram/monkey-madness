@@ -13,11 +13,11 @@
 
     // Configuration
     const KEY_COMBO = {
-        ctrl: false,   // Set to true to require Ctrl key (Windows/Linux)
-        alt: false,    // Set to true to require Alt/Option key
-        shift: false,  // Set to true to require Shift key
-        meta: false,   // Set to true to require Command key (Mac)
-        key: 'F1'      // Function key that rarely conflicts with browser shortcuts
+        ctrl: false, // Set to true to require Ctrl key (Windows/Linux)
+        alt: false, // Set to true to require Alt/Option key
+        shift: false, // Set to true to require Shift key
+        meta: false, // Set to true to require Command key (Mac)
+        key: 'F1', // Function key that rarely conflicts with browser shortcuts
     };
 
     const HIGHLIGHT_COLOR = 'yellow';
@@ -39,7 +39,7 @@
         const originalStyles = {
             backgroundColor: element.style.backgroundColor,
             color: element.style.color,
-            transition: element.style.transition
+            transition: element.style.transition,
         };
 
         // Apply highlight with a smooth transition
@@ -90,14 +90,14 @@
     function adjustColor(color, amount) {
         // For simple named colors, use a map
         const colorMap = {
-            'yellow': '#FFFF00',
-            'red': '#FF0000',
-            'blue': '#0000FF',
-            'green': '#00FF00',
-            'purple': '#800080',
-            'orange': '#FFA500',
-            'black': '#000000',
-            'white': '#FFFFFF'
+            yellow: '#FFFF00',
+            red: '#FF0000',
+            blue: '#0000FF',
+            green: '#00FF00',
+            purple: '#800080',
+            orange: '#FFA500',
+            black: '#000000',
+            white: '#FFFFFF',
         };
 
         let hex = colorMap[color.toLowerCase()] || color;
@@ -117,11 +117,19 @@
         const t = percent < 0 ? 0 : 255;
         const p = percent < 0 ? percent * -1 : percent;
         const R = f >> 16;
-        const G = (f >> 8) & 0x00FF;
-        const B = f & 0x0000FF;
-        return "#" + (0x1000000 + (Math.round((t - R) * p) + R) * 0x10000 +
-            (Math.round((t - G) * p) + G) * 0x100 +
-            (Math.round((t - B) * p) + B)).toString(16).slice(1);
+        const G = (f >> 8) & 0x00ff;
+        const B = f & 0x0000ff;
+        return (
+            '#' +
+            (
+                0x1000000 +
+                (Math.round((t - R) * p) + R) * 0x10000 +
+                (Math.round((t - G) * p) + G) * 0x100 +
+                (Math.round((t - B) * p) + B)
+            )
+                .toString(16)
+                .slice(1)
+        );
     }
 
     // Function to show a notification
@@ -163,12 +171,13 @@
     // Listen for the keyboard shortcut
     document.addEventListener('keydown', function (e) {
         // Check if the key combo matches our configuration
-        if ((KEY_COMBO.ctrl === e.ctrlKey) &&
-            (KEY_COMBO.alt === e.altKey) &&
-            (KEY_COMBO.shift === e.shiftKey) &&
-            (KEY_COMBO.meta === e.metaKey) &&
-            (e.key.toLowerCase() === KEY_COMBO.key.toLowerCase())) {
-
+        if (
+            KEY_COMBO.ctrl === e.ctrlKey &&
+            KEY_COMBO.alt === e.altKey &&
+            KEY_COMBO.shift === e.shiftKey &&
+            KEY_COMBO.meta === e.metaKey &&
+            e.key.toLowerCase() === KEY_COMBO.key.toLowerCase()
+        ) {
             // Prevent default browser behavior
             e.preventDefault();
 

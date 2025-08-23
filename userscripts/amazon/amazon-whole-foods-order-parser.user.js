@@ -26,7 +26,7 @@
         // Get all item rows (both visible and in expanded sections)
         const itemRows = orderContainer.querySelectorAll('.a-row.a-spacing-base');
 
-        itemRows.forEach(row => {
+        itemRows.forEach((row) => {
             // Extract item name - check for both link and span formats
             const productLink = row.querySelector('a[href*="/dp/"]');
             const productSpan = row.querySelector('.a-column.a-span10 .a-size-small');
@@ -34,7 +34,12 @@
             let itemName = '';
             if (productLink) {
                 itemName = productLink.textContent.trim();
-            } else if (productSpan && !productSpan.textContent.includes('Qty:') && !productSpan.textContent.includes('@') && !productSpan.textContent.includes('$')) {
+            } else if (
+                productSpan &&
+                !productSpan.textContent.includes('Qty:') &&
+                !productSpan.textContent.includes('@') &&
+                !productSpan.textContent.includes('$')
+            ) {
                 itemName = productSpan.textContent.trim();
             }
 
@@ -93,7 +98,7 @@
                     quantity: quantity,
                     unit: unit,
                     unitPrice: parseFloat(unitPrice.toFixed(2)),
-                    totalPrice: parseFloat(totalPrice.toFixed(2))
+                    totalPrice: parseFloat(totalPrice.toFixed(2)),
                 });
             }
         });
@@ -105,7 +110,8 @@
         // Create a button to trigger parsing
         const button = document.createElement('button');
         button.textContent = 'Parse Order to JSON';
-        button.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; padding: 10px 15px; background: #ff9900; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
+        button.style.cssText =
+            'position: fixed; top: 20px; right: 20px; z-index: 10000; padding: 10px 15px; background: #ff9900; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
 
         button.addEventListener('click', function () {
             const orderData = parseWholefoodsOrder();
@@ -117,21 +123,26 @@
                 console.log('Whole Foods Order Data:', jsonOutput);
 
                 // Copy to clipboard
-                navigator.clipboard.writeText(jsonOutput).then(() => {
-                    // Show success message
-                    const message = document.createElement('div');
-                    message.textContent = 'Parsed ' + orderData.length + ' items! JSON copied to clipboard.';
-                    message.style.cssText = 'position: fixed; top: 70px; right: 20px; z-index: 10001; padding: 10px; background: #4CAF50; color: white; border-radius: 4px; max-width: 300px;';
-                    document.body.appendChild(message);
+                navigator.clipboard
+                    .writeText(jsonOutput)
+                    .then(() => {
+                        // Show success message
+                        const message = document.createElement('div');
+                        message.textContent =
+                            'Parsed ' + orderData.length + ' items! JSON copied to clipboard.';
+                        message.style.cssText =
+                            'position: fixed; top: 70px; right: 20px; z-index: 10001; padding: 10px; background: #4CAF50; color: white; border-radius: 4px; max-width: 300px;';
+                        document.body.appendChild(message);
 
-                    setTimeout(() => {
-                        document.body.removeChild(message);
-                    }, 3000);
-                }).catch(err => {
-                    console.error('Could not copy to clipboard:', err);
-                    // Fallback: show JSON in an alert
-                    alert('JSON Data:\n\n' + jsonOutput);
-                });
+                        setTimeout(() => {
+                            document.body.removeChild(message);
+                        }, 3000);
+                    })
+                    .catch((err) => {
+                        console.error('Could not copy to clipboard:', err);
+                        // Fallback: show JSON in an alert
+                        alert('JSON Data:\n\n' + jsonOutput);
+                    });
             } else {
                 alert('No Whole Foods order data found on this page.');
             }

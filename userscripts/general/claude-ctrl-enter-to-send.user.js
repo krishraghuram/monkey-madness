@@ -40,7 +40,7 @@
             cancelable: true,
             composed: true, // For shadow DOM
             view: originalEvent.view,
-            detail: originalEvent.detail
+            detail: originalEvent.detail,
         };
 
         // Create the new keyboard event
@@ -87,8 +87,16 @@
 
         // Process events from valid targets (contenteditable divs or textareas)
         if (isValidTarget(event.target)) {
-            debugLog('Intercepted keydown in valid target', event.target.tagName,
-                'key:', event.key, 'shift:', event.shiftKey, 'ctrl:', event.ctrlKey);
+            debugLog(
+                'Intercepted keydown in valid target',
+                event.target.tagName,
+                'key:',
+                event.key,
+                'shift:',
+                event.shiftKey,
+                'ctrl:',
+                event.ctrlKey
+            );
 
             // Regular Enter should insert a line break
             if (event.key === 'Enter') {
@@ -118,7 +126,10 @@
                     textarea.selectionStart = textarea.selectionEnd = start + 1;
                 } else {
                     // For contenteditable or Shift+Enter/Ctrl+Enter cases, use synthetic event
-                    const syntheticEvent = createSyntheticEvent(event, !(event.shiftKey || event.ctrlKey));
+                    const syntheticEvent = createSyntheticEvent(
+                        event,
+                        !(event.shiftKey || event.ctrlKey)
+                    );
 
                     debugLog('Dispatching synthetic event');
                     event.target.dispatchEvent(syntheticEvent);
@@ -171,7 +182,7 @@
         // Start observing document for DOM changes
         observer.observe(document.documentElement, {
             childList: true,
-            subtree: true
+            subtree: true,
         });
     }
 
