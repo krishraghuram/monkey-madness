@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Amazon Order History Double Pagination
-// @namespace    http://tampermonkey.net/
-// @version      0.1
+// @namespace    https://github.com/krishraghuram
+// @version      0.0.1
 // @description  Adds a pagination bar at the top of Amazon order history
 // @author       Raghuram Krishnaswami
 // @match        https://*.amazon.com/your-orders/*

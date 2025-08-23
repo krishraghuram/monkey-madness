@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name         Claude.ai Key Behavior Swapper
-// @namespace    http://tampermonkey.net/
-// @version      0.2
+// @namespace    https://github.com/krishraghuram
+// @version      0.0.1
 // @description  Swaps Enter and Shift+Enter behaviors on claude.ai (Enter creates line break, Shift+Enter sends message)
 // @author       Raghuram Krishnaswami
 // @match        https://claude.ai/*
 // @grant        none
-// @run-at       document-start
 // ==/UserScript==
 
 (function () {

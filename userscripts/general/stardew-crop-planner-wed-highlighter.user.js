@@ -1,12 +1,11 @@
 // ==UserScript==
 // @name         Stardew Valley Wednesday Pierre's Closure Highlighter
-// @namespace    http://tampermonkey.net/
-// @version      0.1
+// @namespace    https://github.com/krishraghuram
+// @version      0.0.1
 // @description  Highlights Wednesdays in red in the Crop Planner as a reminder that the Pierre's is closed on Wednesdays (so seeds can't be bought)
-// @author       You
+// @author       Raghuram Krishnaswami
 // @match        https://exnil.github.io/crop_planner/*
 // @grant        none
-// @run-at       document-idle
 // ==/UserScript==
 
 (function () {
@@ -40,7 +39,7 @@
     highlightWednesdays();
 
     // Set up a MutationObserver to handle dynamic content changes
-    const observer = new MutationObserver(function (mutations) {
+    const observer = new MutationObserver(function (mutations) { // eslint-disable-line no-unused-vars
         highlightWednesdays();
     });
 

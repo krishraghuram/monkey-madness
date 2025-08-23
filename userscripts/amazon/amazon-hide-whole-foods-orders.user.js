@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Hide Whole Foods Orders on Amazon
-// @namespace    http://tampermonkey.net/
-// @version      1.0
+// @namespace    https://github.com/krishraghuram
+// @version      0.0.1
 // @description  Hide all Whole Foods orders from Amazon order history
-// @author       You
+// @author       Raghuram Krishnaswami
 // @match        https://www.amazon.com/gp/css/order-history*
 // @match        https://www.amazon.com/gp/your-account/order-history*
 // @match        https://www.amazon.com/your-orders/orders*
@@ -39,7 +39,7 @@
     hideWholeFood();
 
     // Set up a mutation observer to run when new content loads (for infinite scrolling or ajax)
-    const observer = new MutationObserver(function (mutations) {
+    const observer = new MutationObserver(function (mutations) { // eslint-disable-line no-unused-vars
         hideWholeFood();
     });
 

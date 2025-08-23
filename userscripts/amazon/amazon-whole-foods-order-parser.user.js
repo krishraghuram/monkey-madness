@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Whole Foods Order Parser
-// @namespace    http://tampermonkey.net/
-// @version      2.0
+// @namespace    https://github.com/krishraghuram
+// @version      0.0.1
 // @description  Parse Whole Foods order data into JSON
-// @author       You
+// @author       Raghuram Krishnaswami
 // @match        https://www.amazon.com/fopo/order-details*
 // @match        https://www.amazon.com/gp/your-account/order-details*
 // @match        https://www.amazon.com/gp/css/order-details*
@@ -90,9 +90,9 @@
             if (itemName && quantity > 0) {
                 items.push({
                     name: itemName,
-                    // quantity: quantity,
-                    // unit: unit,
-                    // unitPrice: parseFloat(unitPrice.toFixed(2)),
+                    quantity: quantity,
+                    unit: unit,
+                    unitPrice: parseFloat(unitPrice.toFixed(2)),
                     totalPrice: parseFloat(totalPrice.toFixed(2))
                 });
             }
