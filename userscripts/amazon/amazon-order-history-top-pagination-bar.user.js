@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Amazon Order History Double Pagination
+// @name         Amazon Order History Top Pagination Bar
 // @namespace    https://github.com/krishraghuram
 // @version      0.0.1
 // @description  Adds a pagination bar at the top of Amazon order history

@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Whole Foods Order Parser
+// @name         Amazon Whole Foods Order Parser
 // @namespace    https://github.com/krishraghuram
 // @version      0.0.1
 // @description  Parse Whole Foods order data into JSON

@@ -13,11 +13,11 @@
 
     // Configuration
     const KEY_COMBO = {
-        ctrl: false, // Set to true to require Ctrl key (Windows/Linux)
-        alt: false, // Set to true to require Alt/Option key
-        shift: false, // Set to true to require Shift key
-        meta: false, // Set to true to require Command key (Mac)
-        key: 'F1', // Function key that rarely conflicts with browser shortcuts
+        ctrl: true,
+        alt: false,
+        shift: true,
+        meta: false,
+        key: 'H',
     };
 
     const HIGHLIGHT_COLOR = 'yellow';
