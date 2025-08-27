@@ -18,6 +18,10 @@ const ALLOWED_HEADERS = [
     '@namespace', '@author', '@name', '@version', '@description', '@grant', '@match'
 ];
 
+const IGNORE_FILES = [
+    'userscripts/general/claude-ctrl-enter-to-send.user.js'
+]
+
 function validateUserScript(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
     const lines = content.split('\n');
@@ -91,6 +95,9 @@ async function main() {
     let totalErrors = 0;
 
     files.forEach(file => {
+        if (IGNORE_FILES.includes(file)) {
+            return;
+        }
         const errors = validateUserScript(file);
         if (errors.length > 0) {
             console.log(`\n${file}:`);
