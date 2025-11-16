@@ -11,16 +11,14 @@ const REQUIRED_HEADERS = [
     { key: '@name' },
     { key: '@version', value: '0.0.1' },
     { key: '@description' },
-    { key: '@grant', value: 'none' }
+    { key: '@grant', value: ['none','GM_addStyle'] }
 ];
 
 const ALLOWED_HEADERS = [
-    '@namespace', '@author', '@name', '@version', '@description', '@grant', '@match'
+    '@namespace', '@author', '@name', '@version', '@description', '@grant', '@match', '@validate-ignore'
 ];
 
-const IGNORE_FILES = [
-    'userscripts/general/claude-ctrl-enter-to-send.user.js'
-]
+const KEY_VALIDATE_IGNORE = "@validate-ignore";
 
 function validateUserScript(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
@@ -46,7 +44,7 @@ function validateUserScript(filePath) {
             return;
         }
 
-        const headerMatch = trimmed.match(/^\/\/\s*(@\w+)\s+(.+)$/);
+        const headerMatch = trimmed.match(/^\/\/\s*(@[\w-]+)\s+(.+)$/);
         if (!headerMatch) {
             if (trimmed !== '//') {
                 errors.push(`Line ${startIndex + index + 2}: Invalid header format`);
@@ -56,26 +54,30 @@ function validateUserScript(filePath) {
 
         const [, key, value] = headerMatch;
 
-        // Check if header is allowed
-        if (!ALLOWED_HEADERS.includes(key)) {
-            errors.push(`Line ${startIndex + index + 2}: Unexpected header '${key}'`);
-            return;
-        }
-
         if (!headers[key]) {
             headers[key] = [];
         }
         headers[key].push(value);
     });
 
+    let VALIDATE_IGNORE = headers[KEY_VALIDATE_IGNORE] || [];
+    for (const headerName in headers) {
+        if (VALIDATE_IGNORE.includes(headerName)) {
+            continue;
+        }
+        if (!ALLOWED_HEADERS.includes(headerName)) {
+            errors.push(`Unexpected header '${headerName}'`);
+        }
+    }
+
     // Validate required headers
     REQUIRED_HEADERS.forEach(req => {
         if (!headers[req.key]) {
             errors.push(`Missing required header '${req.key}'`);
-        } else if (req.value && !headers[req.key].includes(req.value)) {
-            errors.push(`Header '${req.key}' should be '${req.value}', found: ${headers[req.key].join(', ')}`);
         } else if (headers[req.key].every(val => !val.trim())) {
             errors.push(`Header '${req.key}' cannot be empty`);
+        } else if (req.value && ![req.value].flat().some(i => headers[req.key].includes(i))) {
+            errors.push(`Header '${req.key}' should be '${req.value}', found: ${headers[req.key].join(', ')}`);
         }
     });
 
@@ -95,9 +97,6 @@ async function main() {
     let totalErrors = 0;
 
     files.forEach(file => {
-        if (IGNORE_FILES.includes(file)) {
-            return;
-        }
         const errors = validateUserScript(file);
         if (errors.length > 0) {
             console.log(`\n${file}:`);

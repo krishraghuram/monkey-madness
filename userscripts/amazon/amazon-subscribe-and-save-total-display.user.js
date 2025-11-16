@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Amazon Subscribe & Save Analyzer
-// @namespace    http://tampermonkey.net/
-// @version      1.0
+// @namespace    https://github.com/krishraghuram
+// @version      0.0.1
 // @description  Show total delivery prices and export subscription data
-// @author       You
+// @author       Raghuram Krishnaswami
 // @match        https://www.amazon.com/auto-deliveries*
 // @grant        none
 // ==/UserScript==

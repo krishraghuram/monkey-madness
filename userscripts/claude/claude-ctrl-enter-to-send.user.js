@@ -7,7 +7,7 @@
 // @match            https://claude.ai/*
 // @grant            none
 // @run-at           document-start
-// @validate-ignore  run-at
+// @validate-ignore  @run-at
 // ==/UserScript==
 
 (function () {
