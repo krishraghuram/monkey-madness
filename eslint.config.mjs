@@ -6,7 +6,7 @@ export default [
   {
     files: ["**/*.{js,mjs,cjs}"],
     languageOptions: {
-      globals: globals.browser
+      globals: {"GM_addStyle": "readonly", ...globals.browser}
     }
   }
 ];
