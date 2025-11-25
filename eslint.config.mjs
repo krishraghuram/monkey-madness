@@ -6,7 +6,12 @@ export default [
   {
     files: ["**/*.{js,mjs,cjs}"],
     languageOptions: {
-      globals: {"GM_addStyle": "readonly", ...globals.browser}
+      globals: {
+        "GM_addStyle": "readonly",
+        "GM_getValue": "readonly",
+        "GM_setValue": "readonly",
+        ...globals.browser
+      }
     }
   }
 ];

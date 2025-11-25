@@ -11,7 +11,7 @@ const REQUIRED_HEADERS = [
     { key: '@name' },
     { key: '@version', value: '0.0.1' },
     { key: '@description' },
-    { key: '@grant', value: ['none','GM_addStyle'] }
+    { key: '@grant', value: ['none','GM_addStyle','GM_setValue','GM_getValue'] }
 ];
 
 const ALLOWED_HEADERS = [
