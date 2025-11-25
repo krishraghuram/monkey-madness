@@ -7,7 +7,8 @@
 // @match        https://medium.com/
 // @match        https://*.medium.com/
 // @match        https://medium.com/@*
-// @grant        none
+// @grant        GM_setValue
+// @grant        GM_getValue
 // ==/UserScript==
 
 (async function() {
@@ -18,12 +19,12 @@
     let currentDelay = delays[0];
     let timeoutId = null;
     let removedThisSession = 0;
-    let isEnabled = localStorage.getItem('mediumRemover_enabled') !== 'false'; // Default to enabled
-    let totalRemovedAllTime = parseInt(localStorage.getItem('mediumRemover_totalRemoved') || '0');
+    let isEnabled = GM_getValue('mediumRemover_enabled', true); // Default to enabled
+    let totalRemovedAllTime = GM_getValue('mediumRemover_totalRemoved', 0);
 
     function updateTotalRemoved(count) {
         totalRemovedAllTime += count;
-        localStorage.setItem('mediumRemover_totalRemoved', totalRemovedAllTime.toString());
+        GM_setValue('mediumRemover_totalRemoved', totalRemovedAllTime);
     }
 
     function showToast(message, duration = 3000) {
@@ -143,7 +144,7 @@
         // Event listeners
         document.getElementById('remover-toggle').addEventListener('change', (e) => {
             isEnabled = e.target.checked;
-            localStorage.setItem('mediumRemover_enabled', isEnabled.toString());
+            GM_setValue('mediumRemover_enabled', isEnabled);
             
             if (isEnabled) {
                 showToast('Continuous removal enabled');
@@ -165,7 +166,7 @@
         document.getElementById('reset-stats-btn').addEventListener('click', () => {
             if (confirm('Reset all-time statistics?')) {
                 totalRemovedAllTime = 0;
-                localStorage.setItem('mediumRemover_totalRemoved', '0');
+                GM_setValue('mediumRemover_totalRemoved', 0);
                 document.getElementById('alltime-count').textContent = '0';
                 showToast('Statistics reset');
             }
