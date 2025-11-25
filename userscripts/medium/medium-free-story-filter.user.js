@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Medium.com Remove Member-Only Articles
-// @namespace    http://tampermonkey.net/
-// @version      2.0
-// @description  Medium.com Remove Member-Only Articles with Settings Panel
-// @author       You
+// @name         Medium Free Story Filter
+// @namespace    https://github.com/krishraghuram
+// @version      0.0.1
+// @description  Remove medium.com stories that are inaccessible to non-members
+// @author       Raghuram Krishnaswami
 // @match        https://medium.com/
 // @match        https://*.medium.com/
 // @match        https://medium.com/@*
@@ -11,7 +11,7 @@
 // @grant        GM_getValue
 // ==/UserScript==
 
-(async function() {
+(async function () {
     'use strict';
 
     const delays = [1000, 2000, 4000, 8000, 16000, 20000];
@@ -84,13 +84,13 @@
 
         panel.innerHTML = `
             <div style="margin-bottom: 12px; font-weight: bold; font-size: 16px; color: #333;">
-                Medium Paywalled Article Remover
+                Medium member-only stories remover
             </div>
-            
+
             <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
                 <span style="color: #666;">Continuous Removal:</span>
                 <label style="display: inline-flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" id="remover-toggle" ${isEnabled ? 'checked' : ''} 
+                    <input type="checkbox" id="remover-toggle" ${isEnabled ? 'checked' : ''}
                            style="width: 18px; height: 18px; cursor: pointer;">
                 </label>
             </div>
@@ -145,7 +145,7 @@
         document.getElementById('remover-toggle').addEventListener('change', (e) => {
             isEnabled = e.target.checked;
             GM_setValue('mediumRemover_enabled', isEnabled);
-            
+
             if (isEnabled) {
                 showToast('Continuous removal enabled');
                 startRemovalLoop();
@@ -177,7 +177,7 @@
         removedThisSession += removed;
         document.getElementById('session-count').textContent = removedThisSession;
         document.getElementById('alltime-count').textContent = totalRemovedAllTime;
-        
+
         if (removed > 0) {
             const feedback = document.getElementById('removal-feedback');
             feedback.textContent = `Removed ${removed}`;
@@ -193,38 +193,41 @@
         if (tagName === 'body' || tagName === 'html' || tagName === 'main') {
             return false;
         }
-        
+
         if (element.querySelector('nav') || element.querySelector('header')) {
             return false;
         }
-        
+
         const rect = element.getBoundingClientRect();
         if (rect.width > window.innerWidth * 0.95) {
             return false;
         }
-        
+
         return true;
     }
 
     function removeMemberOnlyArticles(isOneTime = false) {
         const now = new Date().toISOString();
         const articles = document.querySelectorAll('article[data-testid="post-preview"]');
-        
+
         const memberOnlyArticles = [];
-        articles.forEach(article => {
-            const memberOnlyButton = article.querySelector('button[aria-label="Member-only story"]');
+        articles.forEach((article) => {
+            const memberOnlyButton = article.querySelector(
+                'button[aria-label="Member-only story"]'
+            );
             if (memberOnlyButton) {
                 memberOnlyArticles.push(article);
             }
         });
 
-        const articlesToRemove = memberOnlyArticles.length === articles.length 
-            ? memberOnlyArticles.slice(0, -1)
-            : memberOnlyArticles;
+        const articlesToRemove =
+            memberOnlyArticles.length === articles.length
+                ? memberOnlyArticles.slice(0, -1)
+                : memberOnlyArticles;
 
         let removedCount = 0;
 
-        articlesToRemove.forEach(article => {
+        articlesToRemove.forEach((article) => {
             let currentElement = article;
             let parentToRemove = article;
 
@@ -235,7 +238,9 @@
                     break;
                 }
 
-                const articlesInParent = parent.querySelectorAll('article[data-testid="post-preview"]');
+                const articlesInParent = parent.querySelectorAll(
+                    'article[data-testid="post-preview"]'
+                );
 
                 if (articlesInParent.length > 1) {
                     break;
@@ -264,11 +269,13 @@
 
             currentDelay = delays[delayIndex];
             const nextRunSeconds = (currentDelay / 1000).toFixed(1);
-            console.log(`[${now}] Removed ${removedCount} member-only articles. Next run in ${nextRunSeconds} seconds.`);
+            console.log(
+                `[${now}] Removed ${removedCount} member-only stories. Next run in ${nextRunSeconds} seconds.`
+            );
 
             timeoutId = setTimeout(() => removeMemberOnlyArticles(false), currentDelay);
         } else if (isOneTime) {
-            console.log(`[${now}] One-time removal: Removed ${removedCount} member-only articles.`);
+            console.log(`[${now}] One-time removal: Removed ${removedCount} member-only stories.`);
         }
     }
 
@@ -286,9 +293,9 @@
 
     // Start removal if enabled
     if (isEnabled) {
-        console.log('Member-only article remover started (enabled)');
+        console.log('Member-only story remover started (enabled)');
         startRemovalLoop();
     } else {
-        console.log('Member-only article remover started (disabled - use settings panel to enable)');
+        console.log('Member-only story remover started (disabled - use settings panel to enable)');
     }
 })();

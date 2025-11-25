@@ -1,14 +1,14 @@
 // ==UserScript==
-// @name         Medium.com Paywall Warning
-// @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Warn when viewing a paywalled Medium article
-// @author       You
+// @name         Medium.com Member-only Detector
+// @namespace    https://github.com/krishraghuram
+// @version      0.0.1
+// @description  Detect when you open a medium.com member-only story
+// @author       Raghuram Krishnaswami
 // @match        https://*.medium.com/*
 // @grant        none
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     let warningShown = false;
@@ -22,18 +22,18 @@
 
     function isMemberOnlyArticle() {
         const memberOnlyText = Array.from(document.querySelectorAll('p')).find(
-            p => p.textContent.trim() === 'Member-only story'
+            (p) => p.textContent.trim() === 'Member-only story'
         );
         return !!memberOnlyText;
     }
 
     function showPaywallWarning() {
         if (warningShown) return; // Prevent duplicate warnings
-        
+
         const warning = document.createElement('div');
         warning.setAttribute('data-paywall-warning', 'true');
         warning.innerHTML = `
-            <strong style="font-size: 20px; display: block; margin-bottom: 8px;">⚠️ This is a Paywalled Article</strong>
+            <strong style="font-size: 20px; display: block; margin-bottom: 8px;">⚠️ This is a member-only story</strong>
         `;
         warning.style.cssText = `
             position: fixed;
@@ -52,31 +52,31 @@
             max-width: 90%;
             animation: slideDown 0.3s ease-out;
         `;
-        
+
         const style = document.createElement('style');
         style.textContent = `
             @keyframes slideDown {
-                from { 
-                    opacity: 0; 
-                    transform: translateX(-50%) translateY(-20px); 
+                from {
+                    opacity: 0;
+                    transform: translateX(-50%) translateY(-20px);
                 }
-                to { 
-                    opacity: 1; 
-                    transform: translateX(-50%) translateY(0); 
+                to {
+                    opacity: 1;
+                    transform: translateX(-50%) translateY(0);
                 }
             }
         `;
         document.head.appendChild(style);
-        
+
         document.body.appendChild(warning);
         warningShown = true;
     }
 
     function checkForPaywall() {
         if (warningShown) return; // Already checked and shown
-        
+
         if (isArticlePage() && isMemberOnlyArticle()) {
-            console.log('[Medium Paywall Warning] Paywalled article detected');
+            console.log('[Medium Member-only Detector] Member-only story detected');
             showPaywallWarning();
         }
     }
@@ -91,11 +91,11 @@
     // Check periodically with a simple timeout (much safer than MutationObserver)
     let checkCount = 0;
     const maxChecks = 10; // Stop after 10 checks
-    
+
     const intervalId = setInterval(() => {
         checkCount++;
         checkForPaywall();
-        
+
         if (warningShown || checkCount >= maxChecks) {
             clearInterval(intervalId);
         }
