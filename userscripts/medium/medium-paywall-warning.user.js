@@ -11,13 +11,6 @@
 (function() {
     'use strict';
 
-    // Exit early if not on an article page
-    const path = window.location.pathname;
-    if (path === '/' || path === '' || path.startsWith('/@')) {
-        console.log('[Medium Paywall Warning] Not an article page, script disabled');
-        return;
-    }
-
     let warningShown = false;
 
     function isArticlePage() {
@@ -36,7 +29,7 @@
 
     function showPaywallWarning() {
         if (warningShown) return; // Prevent duplicate warnings
-
+        
         const warning = document.createElement('div');
         warning.setAttribute('data-paywall-warning', 'true');
         warning.innerHTML = `
@@ -60,29 +53,29 @@
             max-width: 90%;
             animation: slideDown 0.3s ease-out;
         `;
-
+        
         const style = document.createElement('style');
         style.textContent = `
             @keyframes slideDown {
-                from {
-                    opacity: 0;
-                    transform: translateX(-50%) translateY(-20px);
+                from { 
+                    opacity: 0; 
+                    transform: translateX(-50%) translateY(-20px); 
                 }
-                to {
-                    opacity: 1;
-                    transform: translateX(-50%) translateY(0);
+                to { 
+                    opacity: 1; 
+                    transform: translateX(-50%) translateY(0); 
                 }
             }
         `;
         document.head.appendChild(style);
-
+        
         document.body.appendChild(warning);
         warningShown = true;
     }
 
     function checkForPaywall() {
         if (warningShown) return; // Already checked and shown
-
+        
         if (isArticlePage() && isMemberOnlyArticle()) {
             console.log('[Medium Paywall Warning] Paywalled article detected');
             showPaywallWarning();
@@ -91,4 +84,21 @@
 
     // Check immediately
     if (document.readyState === 'loading') {
-        document.addEven
+        document.addEventListener('DOMContentLoaded', checkForPaywall);
+    } else {
+        checkForPaywall();
+    }
+
+    // Check periodically with a simple timeout (much safer than MutationObserver)
+    let checkCount = 0;
+    const maxChecks = 10; // Stop after 10 checks
+    
+    const intervalId = setInterval(() => {
+        checkCount++;
+        checkForPaywall();
+        
+        if (warningShown || checkCount >= maxChecks) {
+            clearInterval(intervalId);
+        }
+    }, 500); // Check every 500ms for up to 5 seconds
+})();
