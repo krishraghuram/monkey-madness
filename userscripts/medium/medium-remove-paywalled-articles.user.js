@@ -281,14 +281,8 @@
         removeMemberOnlyArticles(false);
     }
 
-    // Wait for page to load
-    await new Promise(r => setTimeout(r, 2000));
-
     // Create settings panel
     createSettingsPanel();
-
-    // Show initial toast
-    showToast('Removing paywalled articles for your benefit');
 
     // Start removal if enabled
     if (isEnabled) {
