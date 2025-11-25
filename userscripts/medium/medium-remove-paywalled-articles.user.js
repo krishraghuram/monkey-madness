@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Medium.com Remove Member-Only Articles
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Medium.com Remove Member-Only Articles
+// @version      2.0
+// @description  Medium.com Remove Member-Only Articles with Settings Panel
 // @author       You
 // @match        https://medium.com/
 // @match        https://*.medium.com/
@@ -13,14 +13,22 @@
 (async function() {
     'use strict';
 
-    const delays = [1000, 2000, 4000, 8000, 16000, 20000]; // Delays in milliseconds
+    const delays = [1000, 2000, 4000, 8000, 16000, 20000];
     let delayIndex = 0;
     let currentDelay = delays[0];
     let timeoutId = null;
+    let removedThisSession = 0;
+    let isEnabled = localStorage.getItem('mediumRemover_enabled') !== 'false'; // Default to enabled
+    let totalRemovedAllTime = parseInt(localStorage.getItem('mediumRemover_totalRemoved') || '0');
 
-    function showToast() {
+    function updateTotalRemoved(count) {
+        totalRemovedAllTime += count;
+        localStorage.setItem('mediumRemover_totalRemoved', totalRemovedAllTime.toString());
+    }
+
+    function showToast(message, duration = 3000) {
         const toast = document.createElement('div');
-        toast.textContent = 'Removing paywalled articles for your benefit';
+        toast.textContent = message;
         toast.style.cssText = `
             position: fixed;
             top: 20px;
@@ -34,10 +42,9 @@
             font-family: system-ui, -apple-system, sans-serif;
             z-index: 10000;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            animation: fadeInOut 3s ease-in-out;
+            animation: fadeInOut ${duration}ms ease-in-out;
         `;
 
-        // Add animation styles
         const style = document.createElement('style');
         style.textContent = `
             @keyframes fadeInOut {
@@ -47,103 +54,246 @@
                 100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
             }
         `;
-        document.head.appendChild(style);
+        if (!document.querySelector('style[data-toast-style]')) {
+            style.setAttribute('data-toast-style', 'true');
+            document.head.appendChild(style);
+        }
 
         document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), duration);
+    }
 
-        // Remove toast after animation completes
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
+    function createSettingsPanel() {
+        const panel = document.createElement('div');
+        panel.id = 'medium-remover-settings';
+        panel.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            min-width: 250px;
+        `;
+
+        panel.innerHTML = `
+            <div style="margin-bottom: 12px; font-weight: bold; font-size: 16px; color: #333;">
+                Medium Article Remover
+            </div>
+            
+            <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <span style="color: #666;">Continuous Removal:</span>
+                <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="remover-toggle" ${isEnabled ? 'checked' : ''} 
+                           style="width: 18px; height: 18px; cursor: pointer;">
+                </label>
+            </div>
+
+            <button id="run-once-btn" style="
+                width: 100%;
+                padding: 8px;
+                margin-bottom: 12px;
+                background: #1a8917;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+            ">Run Once</button>
+
+            <div style="border-top: 1px solid #eee; padding-top: 12px; margin-top: 12px;">
+                <div style="margin-bottom: 8px; color: #666;">
+                    This session: <strong id="session-count" style="color: #1a8917;">0</strong>
+                </div>
+                <div style="margin-bottom: 8px; color: #666;">
+                    All time: <strong id="alltime-count" style="color: #1a8917;">${totalRemovedAllTime}</strong>
+                </div>
+                <button id="reset-stats-btn" style="
+                    width: 100%;
+                    padding: 6px;
+                    background: #f0f0f0;
+                    color: #666;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 12px;
+                ">Reset All-Time Stats</button>
+            </div>
+
+            <div id="removal-feedback" style="
+                margin-top: 12px;
+                padding: 8px;
+                background: #e8f5e9;
+                color: #1a8917;
+                border-radius: 4px;
+                text-align: center;
+                font-weight: 500;
+                display: none;
+            "></div>
+        `;
+
+        document.body.appendChild(panel);
+
+        // Event listeners
+        document.getElementById('remover-toggle').addEventListener('change', (e) => {
+            isEnabled = e.target.checked;
+            localStorage.setItem('mediumRemover_enabled', isEnabled.toString());
+            
+            if (isEnabled) {
+                showToast('Continuous removal enabled');
+                startRemovalLoop();
+            } else {
+                showToast('Continuous removal disabled');
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+            }
+        });
+
+        document.getElementById('run-once-btn').addEventListener('click', () => {
+            showToast('Running one-time removal...');
+            removeMemberOnlyArticles(true);
+        });
+
+        document.getElementById('reset-stats-btn').addEventListener('click', () => {
+            if (confirm('Reset all-time statistics?')) {
+                totalRemovedAllTime = 0;
+                localStorage.setItem('mediumRemover_totalRemoved', '0');
+                document.getElementById('alltime-count').textContent = '0';
+                showToast('Statistics reset');
+            }
+        });
+    }
+
+    function updateStats(removed) {
+        removedThisSession += removed;
+        document.getElementById('session-count').textContent = removedThisSession;
+        document.getElementById('alltime-count').textContent = totalRemovedAllTime;
+        
+        if (removed > 0) {
+            const feedback = document.getElementById('removal-feedback');
+            feedback.textContent = `Removed ${removed}`;
+            feedback.style.display = 'block';
+            setTimeout(() => {
+                feedback.style.display = 'none';
+            }, 2000);
+        }
     }
 
     function isSafeToRemove(element) {
-        // Don't remove these critical elements
         const tagName = element.tagName.toLowerCase();
         if (tagName === 'body' || tagName === 'html' || tagName === 'main') {
             return false;
         }
-
-        // Don't remove elements that contain the navigation/header
+        
         if (element.querySelector('nav') || element.querySelector('header')) {
             return false;
         }
-
-        // Don't remove elements that are too large (likely page containers)
+        
         const rect = element.getBoundingClientRect();
         if (rect.width > window.innerWidth * 0.95) {
             return false;
         }
-
+        
         return true;
     }
 
-    function removeMemberOnlyArticles() {
+    function removeMemberOnlyArticles(isOneTime = false) {
         const now = new Date().toISOString();
-
-        // Find all article elements
         const articles = document.querySelectorAll('article[data-testid="post-preview"]');
-        let removedCount = 0;
-
+        
+        const memberOnlyArticles = [];
         articles.forEach(article => {
-            // Check if this article contains a member-only button
             const memberOnlyButton = article.querySelector('button[aria-label="Member-only story"]');
-
             if (memberOnlyButton) {
-                // Traverse up to find the highest parent before encountering another article
-                let currentElement = article;
-                let parentToRemove = article;
-
-                while (currentElement.parentElement) {
-                    const parent = currentElement.parentElement;
-
-                    // Safety check: don't remove critical page elements
-                    if (!isSafeToRemove(parent)) {
-                        break;
-                    }
-
-                    // Check if parent contains other articles (siblings of our article)
-                    const articlesInParent = parent.querySelectorAll('article[data-testid="post-preview"]');
-
-                    // If parent contains more than just this one article, stop here
-                    if (articlesInParent.length > 1) {
-                        break;
-                    }
-
-                    // Otherwise, this parent can be removed
-                    parentToRemove = parent;
-                    currentElement = parent;
-                }
-
-                parentToRemove.remove();
-                removedCount++;
+                memberOnlyArticles.push(article);
             }
         });
 
-        // Adjust delay based on results
-        if (removedCount === 0) {
-            // Move to next delay in sequence (cap at last value)
-            delayIndex = Math.min(delayIndex + 1, delays.length - 1);
-        } else {
-            // Reset to first delay when we find articles
-            delayIndex = 0;
+        const articlesToRemove = memberOnlyArticles.length === articles.length 
+            ? memberOnlyArticles.slice(0, -1)
+            : memberOnlyArticles;
+
+        let removedCount = 0;
+
+        articlesToRemove.forEach(article => {
+            let currentElement = article;
+            let parentToRemove = article;
+
+            while (currentElement.parentElement) {
+                const parent = currentElement.parentElement;
+
+                if (!isSafeToRemove(parent)) {
+                    break;
+                }
+
+                const articlesInParent = parent.querySelectorAll('article[data-testid="post-preview"]');
+
+                if (articlesInParent.length > 1) {
+                    break;
+                }
+
+                parentToRemove = parent;
+                currentElement = parent;
+            }
+
+            parentToRemove.remove();
+            removedCount++;
+        });
+
+        if (removedCount > 0) {
+            updateTotalRemoved(removedCount);
+            updateStats(removedCount);
         }
 
-        currentDelay = delays[delayIndex];
-        const nextRunSeconds = (currentDelay / 1000).toFixed(1);
-        console.log(`[${now}] Removed ${removedCount} member-only articles. Next run in ${nextRunSeconds} seconds.`);
+        // Only continue loop if not one-time and enabled
+        if (!isOneTime && isEnabled) {
+            if (removedCount === 0) {
+                delayIndex = Math.min(delayIndex + 1, delays.length - 1);
+            } else {
+                delayIndex = 0;
+            }
 
-        // Schedule next run
-        timeoutId = setTimeout(removeMemberOnlyArticles, currentDelay);
+            currentDelay = delays[delayIndex];
+            const nextRunSeconds = (currentDelay / 1000).toFixed(1);
+            console.log(`[${now}] Removed ${removedCount} member-only articles. Next run in ${nextRunSeconds} seconds.`);
+
+            timeoutId = setTimeout(() => removeMemberOnlyArticles(false), currentDelay);
+        } else if (isOneTime) {
+            console.log(`[${now}] One-time removal: Removed ${removedCount} member-only articles.`);
+        }
     }
 
-    // Wait 2 seconds
-    await new Promise(r => setTimeout(r, 5000));
+    function startRemovalLoop() {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+        delayIndex = 0;
+        currentDelay = delays[0];
+        removeMemberOnlyArticles(false);
+    }
 
-    // Show toast notification
-    showToast();
+    // Wait for page to load
+    await new Promise(r => setTimeout(r, 2000));
 
-    // Start the process
-    console.log('Member-only article remover started');
-    removeMemberOnlyArticles();
+    // Create settings panel
+    createSettingsPanel();
+
+    // Show initial toast
+    showToast('Removing paywalled articles for your benefit');
+
+    // Start removal if enabled
+    if (isEnabled) {
+        console.log('Member-only article remover started (enabled)');
+        startRemovalLoop();
+    } else {
+        console.log('Member-only article remover started (disabled - use settings panel to enable)');
+    }
 })();
