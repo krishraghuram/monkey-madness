@@ -84,7 +84,7 @@
 
         panel.innerHTML = `
             <div style="margin-bottom: 12px; font-weight: bold; font-size: 16px; color: #333;">
-                Medium Article Remover
+                Medium Paywalled Article Remover
             </div>
             
             <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">

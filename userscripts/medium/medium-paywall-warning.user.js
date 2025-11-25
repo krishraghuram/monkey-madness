@@ -33,8 +33,7 @@
         const warning = document.createElement('div');
         warning.setAttribute('data-paywall-warning', 'true');
         warning.innerHTML = `
-            <strong style="font-size: 20px; display: block; margin-bottom: 8px;">⚠️ This is a paywalled article</strong>
-            <span>Check <a href="https://www.reddit.com/r/Piracy/comments/16b9jzn/how_can_i_read_medium_articles_for_free_as/" target="_blank" style="color: #4da6ff; text-decoration: underline;">this Reddit thread</a> for alternatives</span>
+            <strong style="font-size: 20px; display: block; margin-bottom: 8px;">⚠️ This is a Paywalled Article</strong>
         `;
         warning.style.cssText = `
             position: fixed;
