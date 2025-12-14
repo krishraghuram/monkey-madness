@@ -65,15 +65,9 @@
     let currentIndex = -1;
     let userMessages = [];
 
-    // Function to check if element has background-color defined in style
-    function hasBackgroundColorStyle(element) {
-        const computedStyle = window.getComputedStyle(element);
-        // Check if background-color is explicitly set (not just inherited)
-        return (
-            computedStyle.backgroundColor &&
-            computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' &&
-            computedStyle.backgroundColor !== 'transparent'
-        );
+    // Function to count user messages within an element
+    function countUserMessages(element) {
+        return element.querySelectorAll('[data-testid="user-message"]').length;
     }
 
     // Function to find all user message containers
@@ -82,27 +76,26 @@
         const userMessageElements = document.querySelectorAll('[data-testid="user-message"]');
 
         // Get their ancestor containers
-        userMessages = Array.from(userMessageElements)
-            .map((el) => {
-                let container = el;
+        userMessages = Array.from(userMessageElements).map(el => {
+            let container = el;
+            let lastValid = container;
 
-                // Walk up the DOM to find the container
-                while (container && container.parentElement) {
-                    // Look for the container that has avatar, message, and background-color
-                    const hasAvatar = container.querySelector(
-                        '.rounded-full[class*="bg-text-200"]'
-                    );
-                    const hasMessage = container.querySelector('[data-testid="user-message"]');
-                    const hasBgColor = hasBackgroundColorStyle(container);
+            // Keep going up as long as parent doesn't contain more than one user message
+            while (container && container.parentElement) {
+                const parent = container.parentElement;
+                const messageCount = countUserMessages(parent);
 
-                    if (hasAvatar && hasMessage && hasBgColor) {
-                        return container;
-                    }
-                    container = container.parentElement;
+                if (messageCount > 1) {
+                    // Parent has multiple messages, stop here
+                    break;
                 }
-                return null;
-            })
-            .filter(Boolean);
+
+                lastValid = container;
+                container = parent;
+            }
+
+            return lastValid;
+        }).filter(Boolean);
 
         // Remove duplicates
         userMessages = [...new Set(userMessages)];
@@ -110,12 +103,51 @@
         return userMessages;
     }
 
+    function findDescendantWithDifferentBackground(element) {
+        // Get the background color of the starting element
+        const elementBgColor = window.getComputedStyle(element).backgroundColor;
+
+        // Find the descendant with data-testid="user-message"
+        const userMessage = element.querySelector('[data-testid="user-message"]');
+        if (!userMessage) {
+            return null;
+        }
+
+        // Traverse from element down to userMessage
+        let current = userMessage;
+        const pathToUserMessage = [];
+
+        // Build path from userMessage up to element
+        while (current && current !== element) {
+            pathToUserMessage.unshift(current);
+            current = current.parentElement;
+        }
+
+        // Now check each element in the path for different background
+        for (let node of pathToUserMessage) {
+            const nodeBgColor = window.getComputedStyle(node).backgroundColor;
+
+            // Skip transparent backgrounds
+            if (!nodeBgColor || nodeBgColor === 'rgba(0, 0, 0, 0)' || nodeBgColor === 'transparent') {
+                continue;
+            }
+
+            // Check if different from element's background
+            if (nodeBgColor !== elementBgColor) {
+                return node;
+            }
+        }
+
+        return null;
+    }
+
     // Function to scroll to a message
     function scrollToMessage(index) {
         if (index < 0 || index >= userMessages.length) return;
 
         currentIndex = index;
-        const element = userMessages[index];
+        const userMessage = userMessages[index];
+        const element = findDescendantWithDifferentBackground(userMessage);
 
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -139,8 +171,9 @@
         if (prevBtn) prevBtn.disabled = currentIndex <= 0;
         if (nextBtn) nextBtn.disabled = currentIndex >= userMessages.length - 1;
         if (indicator) {
-            indicator.textContent =
-                userMessages.length > 0 ? `${currentIndex + 1}/${userMessages.length}` : '0/0';
+            indicator.textContent = userMessages.length > 0
+                ? `${currentIndex + 1}/${userMessages.length}`
+                : '0/0';
         }
     }
 
@@ -217,7 +250,7 @@
         if (chatContainer) {
             observer.observe(chatContainer, {
                 childList: true,
-                subtree: true,
+                subtree: true
             });
         }
     }, 1000);
