@@ -64,6 +64,7 @@
 
     let currentIndex = -1;
     let userMessages = [];
+    let isScrollingProgrammatically = false;
 
     // Function to count user messages within an element
     function countUserMessages(element) {
@@ -76,7 +77,7 @@
         const userMessageElements = document.querySelectorAll('[data-testid="user-message"]');
 
         // Get their ancestor containers
-        userMessages = Array.from(userMessageElements).map(el => {
+        const messages = Array.from(userMessageElements).map(el => {
             let container = el;
             let lastValid = container;
 
@@ -98,9 +99,7 @@
         }).filter(Boolean);
 
         // Remove duplicates
-        userMessages = [...new Set(userMessages)];
-
-        return userMessages;
+        return [...new Set(messages)];
     }
 
     function findDescendantWithDifferentBackground(element) {
@@ -141,6 +140,39 @@
         return null;
     }
 
+    // Function to find which message is currently in view
+    function findVisibleMessageIndex() {
+        if (userMessages.length === 0) return -1;
+
+        const viewportMiddle = window.innerHeight / 2;
+        let closestIndex = 0;
+        let closestDistance = Infinity;
+
+        userMessages.forEach((msg, index) => {
+            const rect = msg.getBoundingClientRect();
+            const msgMiddle = rect.top + rect.height / 2;
+            const distance = Math.abs(msgMiddle - viewportMiddle);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = index;
+            }
+        });
+
+        return closestIndex;
+    }
+
+    // Function to update current index based on scroll position
+    function updateCurrentIndexFromScroll() {
+        if (isScrollingProgrammatically) return;
+
+        const visibleIndex = findVisibleMessageIndex();
+        if (visibleIndex !== -1 && visibleIndex !== currentIndex) {
+            currentIndex = visibleIndex;
+            updateButtons();
+        }
+    }
+
     // Function to scroll to a message
     function scrollToMessage(index) {
         if (index < 0 || index >= userMessages.length) return;
@@ -149,7 +181,13 @@
         const userMessage = userMessages[index];
         const element = findDescendantWithDifferentBackground(userMessage);
 
+        isScrollingProgrammatically = true;
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Reset flag after scroll animation completes
+        setTimeout(() => {
+            isScrollingProgrammatically = false;
+        }, 1000);
 
         // Highlight briefly
         element.style.transition = 'background-color 0.7s';
@@ -188,9 +226,9 @@
         container.className = 'chat-nav-buttons';
 
         container.innerHTML = `
-            <button id="chat-nav-prev" class="chat-nav-btn" title="Previous message (↑)">↑</button>
+            <button id="chat-nav-prev" class="chat-nav-btn" title="Previous message (Alt+↑)">↑</button>
             <div id="chat-nav-indicator" class="chat-nav-indicator">0/0</div>
-            <button id="chat-nav-next" class="chat-nav-btn" title="Next message (↓)">↓</button>
+            <button id="chat-nav-next" class="chat-nav-btn" title="Next message (Alt+↓)">↓</button>
         `;
 
         document.body.appendChild(container);
@@ -222,25 +260,51 @@
 
     // Initialize
     function init() {
-        findUserMessages();
-        createNavButtons();
-        updateButtons();
+        const newMessages = findUserMessages();
+        const messagesChanged = newMessages.length !== userMessages.length;
 
-        // Set initial position to first message
-        if (userMessages.length > 0 && currentIndex === -1) {
-            currentIndex = 0;
-            updateButtons();
+        userMessages = newMessages;
+
+        if (!document.getElementById('chat-nav-container')) {
+            createNavButtons();
         }
+
+        // If messages were added and we were at the end, move to new last message
+        if (messagesChanged && currentIndex === userMessages.length - 2) {
+            currentIndex = userMessages.length - 1;
+        }
+
+        // Set initial position to first message if not set
+        if (userMessages.length > 0 && currentIndex === -1) {
+            currentIndex = findVisibleMessageIndex();
+            if (currentIndex === -1) currentIndex = 0;
+        }
+
+        updateButtons();
     }
 
-    // Watch for new messages being added
-    const observer = new MutationObserver(() => {
-        const oldCount = userMessages.length;
-        findUserMessages();
-        if (userMessages.length !== oldCount) {
-            updateButtons();
-        }
+    let mutationTimeout;
+    const mutationObserver = new MutationObserver(() => {
+        // Debounce: only run init() once mutations settle down
+        clearTimeout(mutationTimeout);
+        mutationTimeout = setTimeout(() => {
+            init();
+        }, 200); // Wait for a bit after last mutation
     });
+
+    // Also add disconnect on page unload to prevent memory leaks
+    window.addEventListener('beforeunload', () => {
+        mutationObserver.disconnect();
+    });
+
+    // Watch for scroll events
+    let scrollTimeout;
+    const handleScroll = () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            updateCurrentIndexFromScroll();
+        }, 150); // Debounce scroll updates
+    };
 
     // Start observing after page loads
     setTimeout(() => {
@@ -248,10 +312,13 @@
 
         const chatContainer = document.querySelector('.overflow-y-scroll');
         if (chatContainer) {
-            observer.observe(chatContainer, {
+            mutationObserver.observe(chatContainer, {
                 childList: true,
                 subtree: true
             });
+
+            // Listen for scroll events
+            chatContainer.addEventListener('scroll', handleScroll);
         }
     }, 1000);
 })();
