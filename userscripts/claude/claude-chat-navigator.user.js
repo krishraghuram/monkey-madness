@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         Claude Chat Navigator
 // @namespace    https://github.com/krishraghuram
-// @version      0.0.2
+// @version      0.0.1
 // @description  Navigate between user messages in Claude chat
 // @author       Raghuram Krishnaswami
-// @match        https://claude.ai/chat/*
+// @match        https://claude.ai/*
 // @grant        GM_addStyle
 // ==/UserScript==
 
@@ -65,6 +65,14 @@
     let currentIndex = -1;
     let userMessages = [];
     let isScrollingProgrammatically = false;
+    let isInitialized = false;
+    let mutationObserver = null;
+    let chatContainer = null;
+
+    // Function to check if we're on a chat page
+    function isOnChatPage() {
+        return window.location.pathname.startsWith('/chat/');
+    }
 
     // Function to count user messages within an element
     function countUserMessages(element) {
@@ -77,26 +85,28 @@
         const userMessageElements = document.querySelectorAll('[data-testid="user-message"]');
 
         // Get their ancestor containers
-        const messages = Array.from(userMessageElements).map(el => {
-            let container = el;
-            let lastValid = container;
+        const messages = Array.from(userMessageElements)
+            .map((el) => {
+                let container = el;
+                let lastValid = container;
 
-            // Keep going up as long as parent doesn't contain more than one user message
-            while (container && container.parentElement) {
-                const parent = container.parentElement;
-                const messageCount = countUserMessages(parent);
+                // Keep going up as long as parent doesn't contain more than one user message
+                while (container && container.parentElement) {
+                    const parent = container.parentElement;
+                    const messageCount = countUserMessages(parent);
 
-                if (messageCount > 1) {
-                    // Parent has multiple messages, stop here
-                    break;
+                    if (messageCount > 1) {
+                        // Parent has multiple messages, stop here
+                        break;
+                    }
+
+                    lastValid = container;
+                    container = parent;
                 }
 
-                lastValid = container;
-                container = parent;
-            }
-
-            return lastValid;
-        }).filter(Boolean);
+                return lastValid;
+            })
+            .filter(Boolean);
 
         // Remove duplicates
         return [...new Set(messages)];
@@ -127,7 +137,11 @@
             const nodeBgColor = window.getComputedStyle(node).backgroundColor;
 
             // Skip transparent backgrounds
-            if (!nodeBgColor || nodeBgColor === 'rgba(0, 0, 0, 0)' || nodeBgColor === 'transparent') {
+            if (
+                !nodeBgColor ||
+                nodeBgColor === 'rgba(0, 0, 0, 0)' ||
+                nodeBgColor === 'transparent'
+            ) {
                 continue;
             }
 
@@ -209,9 +223,8 @@
         if (prevBtn) prevBtn.disabled = currentIndex <= 0;
         if (nextBtn) nextBtn.disabled = currentIndex >= userMessages.length - 1;
         if (indicator) {
-            indicator.textContent = userMessages.length > 0
-                ? `${currentIndex + 1}/${userMessages.length}`
-                : '0/0';
+            indicator.textContent =
+                userMessages.length > 0 ? `${currentIndex + 1}/${userMessages.length}` : '0/0';
         }
     }
 
@@ -305,13 +318,6 @@
         }
     };
 
-    const mutationObserver = new MutationObserver(throttledMutationHandler);
-
-    // Also add disconnect on page unload to prevent memory leaks
-    window.addEventListener('beforeunload', () => {
-        mutationObserver.disconnect();
-    });
-
     // Throttle for scroll events - execute immediately, then ignore for T milliseconds
     let scrollThrottleTimer = null;
     let scrollPending = false;
@@ -334,19 +340,76 @@
         }
     };
 
-    // Start observing after page loads
-    setTimeout(() => {
+    // Function to cleanup observers and UI
+    function cleanup() {
+        if (mutationObserver) {
+            mutationObserver.disconnect();
+            mutationObserver = null;
+        }
+        if (chatContainer) {
+            chatContainer.removeEventListener('scroll', handleScroll);
+            chatContainer = null;
+        }
+        const existing = document.getElementById('chat-nav-container');
+        if (existing) existing.remove();
+
+        isInitialized = false;
+        currentIndex = -1;
+        userMessages = [];
+    }
+
+    // Function to start the script
+    function startScript() {
+        if (isInitialized) return;
+
+        chatContainer = document.querySelector('.overflow-y-scroll');
+        if (!chatContainer) {
+            // Chat container not ready yet, try again soon
+            setTimeout(startScript, 500);
+            return;
+        }
+
+        isInitialized = true;
+
         init();
 
-        const chatContainer = document.querySelector('.overflow-y-scroll');
-        if (chatContainer) {
-            mutationObserver.observe(chatContainer, {
-                childList: true,
-                subtree: true
-            });
+        mutationObserver = new MutationObserver(throttledMutationHandler);
+        mutationObserver.observe(chatContainer, {
+            childList: true,
+            subtree: true,
+        });
 
-            // Listen for scroll events
-            chatContainer.addEventListener('scroll', handleScroll);
+        // Listen for scroll events
+        chatContainer.addEventListener('scroll', handleScroll);
+    }
+
+    // Watch for URL changes
+    let lastUrl = location.href;
+    new MutationObserver(() => {
+        const url = location.href;
+        if (url !== lastUrl) {
+            lastUrl = url;
+
+            // Check if we've navigated to or away from a chat page
+            if (isOnChatPage()) {
+                // Navigated to a chat page
+                if (!isInitialized) {
+                    setTimeout(startScript, 1000);
+                }
+            } else {
+                // Navigated away from a chat page
+                if (isInitialized) {
+                    cleanup();
+                }
+            }
         }
-    }, 1000);
+    }).observe(document, { subtree: true, childList: true });
+
+    // Also add disconnect on page unload to prevent memory leaks
+    window.addEventListener('beforeunload', cleanup);
+
+    // Start immediately if already on a chat page
+    if (isOnChatPage()) {
+        setTimeout(startScript, 1000);
+    }
 })();
