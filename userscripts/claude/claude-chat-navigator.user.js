@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Claude Chat Navigator
 // @namespace    https://github.com/krishraghuram
-// @version      0.0.1
+// @version      0.0.2
 // @description  Navigate between user messages in Claude chat
 // @author       Raghuram Krishnaswami
 // @match        https://claude.ai/chat/*
@@ -283,27 +283,55 @@
         updateButtons();
     }
 
-    let mutationTimeout;
-    const mutationObserver = new MutationObserver(() => {
-        // Debounce: only run init() once mutations settle down
-        clearTimeout(mutationTimeout);
-        mutationTimeout = setTimeout(() => {
+    // Throttle for mutations - execute immediately, then ignore for T milliseconds
+    let mutationThrottleTimer = null;
+    let mutationPending = false;
+
+    const throttledMutationHandler = () => {
+        if (mutationThrottleTimer === null) {
+            // Execute immediately
             init();
-        }, 200); // Wait for a bit after last mutation
-    });
+            mutationThrottleTimer = setTimeout(() => {
+                mutationThrottleTimer = null;
+                // If there was a pending event, execute it now
+                if (mutationPending) {
+                    mutationPending = false;
+                    init();
+                }
+            }, 200); // 200ms throttle period
+        } else {
+            // Mark that we have a pending event
+            mutationPending = true;
+        }
+    };
+
+    const mutationObserver = new MutationObserver(throttledMutationHandler);
 
     // Also add disconnect on page unload to prevent memory leaks
     window.addEventListener('beforeunload', () => {
         mutationObserver.disconnect();
     });
 
-    // Watch for scroll events
-    let scrollTimeout;
+    // Throttle for scroll events - execute immediately, then ignore for T milliseconds
+    let scrollThrottleTimer = null;
+    let scrollPending = false;
+
     const handleScroll = () => {
-        clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
+        if (scrollThrottleTimer === null) {
+            // Execute immediately
             updateCurrentIndexFromScroll();
-        }, 150); // Debounce scroll updates
+            scrollThrottleTimer = setTimeout(() => {
+                scrollThrottleTimer = null;
+                // If there was a pending event, execute it now
+                if (scrollPending) {
+                    scrollPending = false;
+                    updateCurrentIndexFromScroll();
+                }
+            }, 100); // 100ms throttle period
+        } else {
+            // Mark that we have a pending event
+            scrollPending = true;
+        }
     };
 
     // Start observing after page loads
