@@ -59,6 +59,32 @@
             font-size: 11px;
             color: #666;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        .chat-nav-indicator:hover {
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .chat-nav-indicator:active {
+            transform: scale(0.95);
+        }
+        .chat-nav-copy-feedback {
+            position: fixed;
+            top: 70px;
+            right: 70px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 10001;
+            animation: fadeInOut 2s ease-in-out;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
         }
     `);
 
@@ -68,10 +94,55 @@
     let isInitialized = false;
     let mutationObserver = null;
     let chatContainer = null;
+    let hasNavigatedFromHash = false;
+
+    const HASH_PREFIX = 'claude-chat-navigator:user-';
 
     // Function to check if we're on a chat page
     function isOnChatPage() {
         return window.location.pathname.startsWith('/chat/');
+    }
+
+    // Function to parse hash and get message index
+    function getMessageIndexFromHash() {
+        const hash = window.location.hash;
+        if (hash.startsWith('#' + HASH_PREFIX)) {
+            const indexStr = hash.substring(HASH_PREFIX.length + 1);
+            const index = parseInt(indexStr, 10);
+            if (!isNaN(index) && index > 0) {
+                return index - 1; // Convert to 0-based index
+            }
+        }
+        return null;
+    }
+
+    // Function to copy link to current message
+    function copyLinkToCurrentMessage() {
+        if (currentIndex === -1 || userMessages.length === 0) return;
+
+        const url = new URL(window.location.href);
+        url.hash = HASH_PREFIX + (currentIndex + 1); // Convert to 1-based for display
+
+        navigator.clipboard
+            .writeText(url.toString())
+            .then(() => {
+                showCopyFeedback();
+            })
+            .catch((err) => {
+                console.error('Failed to copy link:', err);
+            });
+    }
+
+    // Function to show copy feedback
+    function showCopyFeedback() {
+        const feedback = document.createElement('div');
+        feedback.className = 'chat-nav-copy-feedback';
+        feedback.textContent = 'Link copied!';
+        document.body.appendChild(feedback);
+
+        setTimeout(() => {
+            feedback.remove();
+        }, 2000);
     }
 
     // Function to count user messages within an element
@@ -188,7 +259,7 @@
     }
 
     // Function to scroll to a message
-    function scrollToMessage(index) {
+    function scrollToMessage(index, skipHashUpdate = false) {
         if (userMessages.length === 0) return;
 
         // Handle wrapping
@@ -201,6 +272,11 @@
         // Update index and UI immediately
         currentIndex = index;
         updateButtons();
+
+        // Update hash in URL (unless we're navigating FROM a hash)
+        if (!skipHashUpdate) {
+            history.replaceState(null, '', '#' + HASH_PREFIX + (currentIndex + 1));
+        }
 
         // Then perform the scroll
         const userMessage = userMessages[index];
@@ -250,7 +326,7 @@
 
         container.innerHTML = `
             <button id="chat-nav-prev" class="chat-nav-btn" title="Previous message (Alt+↑)">↑</button>
-            <div id="chat-nav-indicator" class="chat-nav-indicator">0/0</div>
+            <div id="chat-nav-indicator" class="chat-nav-indicator" title="Click to copy link to this message">0/0</div>
             <button id="chat-nav-next" class="chat-nav-btn" title="Next message (Alt+↓)">↓</button>
         `;
 
@@ -262,6 +338,10 @@
 
         document.getElementById('chat-nav-next').addEventListener('click', () => {
             scrollToMessage(currentIndex + 1);
+        });
+
+        document.getElementById('chat-nav-indicator').addEventListener('click', () => {
+            copyLinkToCurrentMessage();
         });
     }
 
@@ -286,6 +366,19 @@
 
         if (!document.getElementById('chat-nav-container')) {
             createNavButtons();
+        }
+
+        // Check if we need to navigate from hash (only once per page load)
+        if (!hasNavigatedFromHash && userMessages.length > 0) {
+            const hashIndex = getMessageIndexFromHash();
+            if (hashIndex !== null && hashIndex < userMessages.length) {
+                hasNavigatedFromHash = true;
+                // Add delay to ensure page is fully rendered before scrolling
+                setTimeout(() => {
+                    scrollToMessage(hashIndex, true); // Skip hash update since we're already at this hash
+                }, 500);
+                return;
+            }
         }
 
         // If messages were added and we were at the end, move to new last message
@@ -362,6 +455,7 @@
         isInitialized = false;
         currentIndex = -1;
         userMessages = [];
+        hasNavigatedFromHash = false;
     }
 
     // Function to start the script
