@@ -189,9 +189,20 @@
 
     // Function to scroll to a message
     function scrollToMessage(index) {
-        if (index < 0 || index >= userMessages.length) return;
+        if (userMessages.length === 0) return;
 
+        // Handle wrapping
+        if (index < 0) {
+            index = ((index % userMessages.length) + userMessages.length) % userMessages.length;
+        } else if (index >= userMessages.length) {
+            index = index % userMessages.length;
+        }
+
+        // Update index and UI immediately
         currentIndex = index;
+        updateButtons();
+
+        // Then perform the scroll
         const userMessage = userMessages[index];
         const element = findDescendantWithDifferentBackground(userMessage);
 
@@ -210,8 +221,6 @@
         setTimeout(() => {
             element.style.backgroundColor = originalBg;
         }, 1000);
-
-        updateButtons();
     }
 
     // Function to update button states
@@ -220,8 +229,9 @@
         const nextBtn = document.getElementById('chat-nav-next');
         const indicator = document.getElementById('chat-nav-indicator');
 
-        if (prevBtn) prevBtn.disabled = currentIndex <= 0;
-        if (nextBtn) nextBtn.disabled = currentIndex >= userMessages.length - 1;
+        // Buttons are never disabled now since we loop
+        if (prevBtn) prevBtn.disabled = userMessages.length === 0;
+        if (nextBtn) nextBtn.disabled = userMessages.length === 0;
         if (indicator) {
             indicator.textContent =
                 userMessages.length > 0 ? `${currentIndex + 1}/${userMessages.length}` : '0/0';
@@ -247,15 +257,11 @@
         document.body.appendChild(container);
 
         document.getElementById('chat-nav-prev').addEventListener('click', () => {
-            if (currentIndex > 0) {
-                scrollToMessage(currentIndex - 1);
-            }
+            scrollToMessage(currentIndex - 1);
         });
 
         document.getElementById('chat-nav-next').addEventListener('click', () => {
-            if (currentIndex < userMessages.length - 1) {
-                scrollToMessage(currentIndex + 1);
-            }
+            scrollToMessage(currentIndex + 1);
         });
     }
 
@@ -264,10 +270,10 @@
         // Alt + Up/Down arrows
         if (e.altKey && e.key === 'ArrowUp') {
             e.preventDefault();
-            if (currentIndex > 0) scrollToMessage(currentIndex - 1);
+            scrollToMessage(currentIndex - 1);
         } else if (e.altKey && e.key === 'ArrowDown') {
             e.preventDefault();
-            if (currentIndex < userMessages.length - 1) scrollToMessage(currentIndex + 1);
+            scrollToMessage(currentIndex + 1);
         }
     });
 
