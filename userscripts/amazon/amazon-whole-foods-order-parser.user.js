@@ -13,11 +13,63 @@
 (function () {
     'use strict';
 
+    function parseDateToISO(dateText) {
+        // Parse "Purchased on Wednesday, December 31, 2025" to "2025-12-31"
+        // Extract the date portion (remove "Purchased on ")
+        const dateMatch = dateText.match(/(\w+,\s+\w+\s+\d+,\s+\d{4})/);
+        if (dateMatch) {
+            const date = new Date(dateMatch[1]);
+            if (!isNaN(date.getTime())) {
+                // Format as YYYY-MM-DD
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+        }
+        return null;
+    }
+
     function parseWholefoodsOrder() {
         const orderContainer = document.querySelector('#f3_food_ItemList');
+        const progressTracker = document.querySelector('#f3_food_ProgressTracker');
 
         if (!orderContainer) {
             console.log('Whole Foods order container not found');
+            return null;
+        }
+
+        if (!progressTracker) {
+            console.log('Progress tracker not found');
+            return null;
+        }
+
+        // Validation: Check primary status contains required text
+        const primaryStatus = progressTracker.querySelector('#ufpo-order-status-primary');
+        if (primaryStatus) {
+            const statusText = primaryStatus.innerHTML.trim();
+            if (!statusText.includes('Purchased') || !statusText.includes('Whole Foods Market')) {
+                console.error('Validation failed: Primary status does not contain expected text');
+                console.error('Found:', statusText);
+                return null;
+            }
+        } else {
+            console.error('Primary status element not found');
+            return null;
+        }
+
+        // Extract and parse date
+        const secondaryStatus = progressTracker.querySelector('#ufpo-order-status-secondary');
+        let orderDate = null;
+        if (secondaryStatus) {
+            const dateText = secondaryStatus.innerHTML.trim();
+            orderDate = parseDateToISO(dateText);
+            if (!orderDate) {
+                console.error('Could not parse date from:', dateText);
+                return null;
+            }
+        } else {
+            console.error('Secondary status element not found');
             return null;
         }
 
@@ -103,7 +155,14 @@
             }
         });
 
-        return items;
+        // Calculate total
+        const total = items.reduce((sum, item) => sum + item.totalPrice, 0);
+
+        return {
+            date: orderDate,
+            total: parseFloat(total.toFixed(2)),
+            items: items,
+        };
     }
 
     function addParseButton() {
@@ -116,7 +175,7 @@
         button.addEventListener('click', function () {
             const orderData = parseWholefoodsOrder();
 
-            if (orderData && orderData.length > 0) {
+            if (orderData && orderData.items && orderData.items.length > 0) {
                 const jsonOutput = JSON.stringify(orderData, null, 2);
 
                 // Log to console
@@ -129,7 +188,9 @@
                         // Show success message
                         const message = document.createElement('div');
                         message.textContent =
-                            'Parsed ' + orderData.length + ' items! JSON copied to clipboard.';
+                            'Parsed ' +
+                            orderData.items.length +
+                            ' items! JSON copied to clipboard.';
                         message.style.cssText =
                             'position: fixed; top: 70px; right: 20px; z-index: 10001; padding: 10px; background: #4CAF50; color: white; border-radius: 4px; max-width: 300px;';
                         document.body.appendChild(message);
@@ -144,7 +205,9 @@
                         alert('JSON Data:\n\n' + jsonOutput);
                     });
             } else {
-                alert('No Whole Foods order data found on this page.');
+                alert(
+                    'No Whole Foods order data found on this page or validation failed. Check console for details.'
+                );
             }
         });
 
